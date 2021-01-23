@@ -303,7 +303,7 @@ class ToHtml(Tokenizer):
         theStyles.append(r".skip {margin-top: 1em; margin-bottom: 1em;}")
         theStyles.append(r".synopsis {font-style: italic;}")
         theStyles.append(r".comment {font-style: italic; color: rgb(100, 100, 100);}")
-        theStyles.append(r"blockquote {font-style: italic; color: rgb(0, 40, 80);}")
+        theStyles.append(r"blockquote {color: rgb(49, 84, 130);}")
 
         return theStyles
 
