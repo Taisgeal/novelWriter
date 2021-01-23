@@ -763,6 +763,13 @@ class GuiMainMenu(QMenuBar):
         self.aFmtComment.triggered.connect(lambda: self._docAction(nwDocAction.BLOCK_COM))
         self.fmtMenu.addAction(self.aFmtComment)
 
+        # Format > Block Quote
+        self.aFmtBQuote = QAction("Block Quote", self)
+        self.aFmtBQuote.setStatusTip("Change the block format to block quote")
+        self.aFmtBQuote.setShortcut("Ctrl+>")
+        self.aFmtBQuote.triggered.connect(lambda: self._docAction(nwDocAction.BLOCK_QUO))
+        self.fmtMenu.addAction(self.aFmtBQuote)
+
         # Format > Remove Block Format
         self.aFmtNoFormat = QAction("Remove Block Format", self)
         self.aFmtNoFormat.setStatusTip("Strips block format")

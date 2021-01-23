@@ -1263,6 +1263,7 @@ class GuiMain(QMainWindow):
         self.addAction(self.mainMenu.aFmtHead3)
         self.addAction(self.mainMenu.aFmtHead4)
         self.addAction(self.mainMenu.aFmtComment)
+        self.addAction(self.mainMenu.aFmtBQuote)
         self.addAction(self.mainMenu.aFmtNoFormat)
 
         # Tools

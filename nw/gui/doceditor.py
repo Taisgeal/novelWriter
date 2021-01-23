@@ -682,6 +682,8 @@ class GuiDocEditor(QTextEdit):
             self._formatBlock(nwDocAction.BLOCK_H4)
         elif theAction == nwDocAction.BLOCK_COM:
             self._formatBlock(nwDocAction.BLOCK_COM)
+        elif theAction == nwDocAction.BLOCK_QUO:
+            self._formatBlock(nwDocAction.BLOCK_QUO)
         elif theAction == nwDocAction.BLOCK_TXT:
             self._formatBlock(nwDocAction.BLOCK_TXT)
         elif theAction == nwDocAction.REPL_SNG:
@@ -1451,6 +1453,12 @@ class GuiDocEditor(QTextEdit):
         elif theText.startswith("%"):
             newText = theText[1:]
             cOffset = 1
+        elif theText.startswith("> "):
+            newText = theText[2:]
+            cOffset = 2
+        elif theText.startswith(">"):
+            newText = theText[1:]
+            cOffset = 1
         elif theText.startswith("# "):
             newText = theText[2:]
             cOffset = 2
@@ -1471,6 +1479,9 @@ class GuiDocEditor(QTextEdit):
         if docAction == nwDocAction.BLOCK_COM:
             theText = "% "+newText
             cOffset -= 2
+        elif docAction == nwDocAction.BLOCK_QUO:
+            theText = "> "+newText
+            cOffset -= 2
         elif docAction == nwDocAction.BLOCK_H1:
             theText = "# "+newText
             cOffset -= 2
@@ -1485,7 +1496,6 @@ class GuiDocEditor(QTextEdit):
             cOffset -= 5
         elif docAction == nwDocAction.BLOCK_TXT:
             theText = newText
-            cOffset -= 0
         else:
             logger.error(
                 "Unknown or unsupported block format requested: %s" % str(docAction)
