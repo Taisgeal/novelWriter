@@ -118,7 +118,8 @@ class ToHtml(Tokenizer):
         to theResult.
         """
         if self.genMode == self.M_PREVIEW:
-            htmlTags = {     # HTML4 + CSS2
+            # HTML4 + CSS2
+            htmlTags = {
                 self.FMT_B_B : "<b>",
                 self.FMT_B_E : "</b>",
                 self.FMT_I_B : "<i>",
@@ -127,7 +128,8 @@ class ToHtml(Tokenizer):
                 self.FMT_D_E : "</span>",
             }
         else:
-            htmlTags = {     # HTML5
+            # HTML5
+            htmlTags = {
                 self.FMT_B_B : "<strong>",
                 self.FMT_B_E : "</strong>",
                 self.FMT_I_B : "<em>",
@@ -158,6 +160,7 @@ class ToHtml(Tokenizer):
         parStyle = None
         tmpResult = []
         hasHardBreak = False
+        isBlockQuote = False
         for tType, tLine, tText, tFormat, tStyle in self.theTokens:
 
             # Styles
@@ -198,13 +201,24 @@ class ToHtml(Tokenizer):
             if tType == self.T_EMPTY:
                 if parStyle is None:
                     parStyle = ""
+
                 if hasHardBreak and self.cssStyles:
                     parClass = " class='break'"
                 else:
                     parClass = ""
+
+                if isBlockQuote:
+                    pTag = "blockquote"
+                else:
+                    pTag = "p"
+
                 if len(thisPar) > 0:
                     tTemp = "".join(thisPar)
-                    tmpResult.append("<p%s%s>%s</p>\n" % (parStyle, parClass, tTemp.rstrip()))
+                    tmpResult.append("<%s%s%s>%s</%s>\n" % (
+                        pTag, parStyle, parClass, tTemp.rstrip(), pTag
+                    ))
+                    isBlockQuote = False
+
                 thisPar = []
                 parStyle = None
                 hasHardBreak = False
@@ -235,12 +249,17 @@ class ToHtml(Tokenizer):
             elif tType == self.T_SKIP:
                 tmpResult.append("<p class='skip'>&nbsp;</p>\n")
 
-            elif tType == self.T_TEXT:
+            elif tType == self.T_TEXT or tType == self.T_QUOTE:
+                if tType == self.T_QUOTE:
+                    isBlockQuote = True
+
                 tTemp = tText
                 if parStyle is None:
                     parStyle = hStyle
+
                 for xPos, xLen, xFmt in reversed(tFormat):
                     tTemp = tTemp[:xPos]+htmlTags[xFmt]+tTemp[xPos+xLen:]
+
                 if tText.endswith("  "):
                     thisPar.append(tTemp.rstrip()+"<br/>")
                     hasHardBreak = True
@@ -284,6 +303,7 @@ class ToHtml(Tokenizer):
         theStyles.append(r".skip {margin-top: 1em; margin-bottom: 1em;}")
         theStyles.append(r".synopsis {font-style: italic;}")
         theStyles.append(r".comment {font-style: italic; color: rgb(100, 100, 100);}")
+        theStyles.append(r"blockquote {font-style: italic; color: rgb(0, 40, 80);}")
 
         return theStyles
 

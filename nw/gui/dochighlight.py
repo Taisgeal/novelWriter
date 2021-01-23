@@ -44,6 +44,7 @@ class GuiDocHighlighter(QSyntaxHighlighter):
     BLOCK_TEXT  = 1
     BLOCK_META  = 2
     BLOCK_TITLE = 4
+    BLOCK_QUOTE = 8
 
     def __init__(self, theDoc, theParent):
         QSyntaxHighlighter.__init__(self, theDoc)
@@ -122,6 +123,7 @@ class GuiDocHighlighter(QSyntaxHighlighter):
             "dialogue1"  : self._makeFormat(self.colDialN),
             "dialogue2"  : self._makeFormat(self.colDialD),
             "dialogue3"  : self._makeFormat(self.colDialS),
+            "quote"      : self._makeFormat(self.colDialD,),
             "replace"    : self._makeFormat(self.colRepTag),
             "hidden"     : self._makeFormat(self.colHidden),
             "keyword"    : self._makeFormat(self.colKey),
@@ -338,7 +340,12 @@ class GuiDocHighlighter(QSyntaxHighlighter):
                 self.setFormat(0, tLen, self.hStyles["hidden"])
 
         else: # Text Paragraph
-            self.setCurrentBlockState(self.BLOCK_TEXT)
+            if theText.startswith(">"): # Block Quote
+                self.setCurrentBlockState(self.BLOCK_QUOTE)
+                self.setFormat(0, len(theText), self.hStyles["quote"])
+            else:
+                self.setCurrentBlockState(self.BLOCK_TEXT)
+
             for rX, xFmt in self.rxRules:
                 rxItt = rX.globalMatch(theText, 0)
                 while rxItt.hasNext():

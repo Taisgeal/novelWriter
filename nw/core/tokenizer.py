@@ -55,8 +55,9 @@ class Tokenizer():
     T_HEAD3    = 8  # Header 3
     T_HEAD4    = 9  # Header 4
     T_TEXT     = 10 # Text line
-    T_SEP      = 11 # Scene separator
-    T_SKIP     = 12 # Paragraph break
+    T_QUOTE    = 11 # Block quote
+    T_SEP      = 12 # Scene separator
+    T_SKIP     = 13 # Paragraph break
 
     A_NONE     = 0   # No special style
     A_LEFT     = 1   # Left aligned
@@ -401,6 +402,15 @@ class Tokenizer():
                     # Skip all body text
                     continue
 
+                if aLine.startswith(">"):
+                    pType = self.T_QUOTE
+                    aLine = aLine[1:].lstrip(" ")
+                elif aLine.startswith("&gt;"):
+                    pType = self.T_QUOTE
+                    aLine = aLine[4:].lstrip(" ")
+                else:
+                    pType = self.T_TEXT
+
                 # Otherwise we use RegEx to find formatting tags within a line of text
                 fmtPos = []
                 for theRX, theKeys in rxFormats:
@@ -417,7 +427,7 @@ class Tokenizer():
                 # sorted by position
                 fmtPos = sorted(fmtPos, key=itemgetter(0))
                 self.theTokens.append((
-                    self.T_TEXT,
+                    pType,
                     nLine,
                     aLine,
                     fmtPos,

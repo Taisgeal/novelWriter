@@ -527,6 +527,11 @@ class GuiDocViewer(QTextBrowser):
             ".synopsis {{"
             "  color: rgb({mColR}, {mColG}, {mColB});"
             "}}\n"
+            "blockquote {{"
+            "  color: rgb({qColR}, {qColG}, {qColB});"
+            "  margin-left: {indPx}px;"
+            "  margin-right: {indPx}px;"
+            "}}\n"
         ).format(
             tColR = self.theTheme.colText[0],
             tColG = self.theTheme.colText[1],
@@ -549,6 +554,10 @@ class GuiDocViewer(QTextBrowser):
             mColR = self.theTheme.colMod[0],
             mColG = self.theTheme.colMod[1],
             mColB = self.theTheme.colMod[2],
+            qColR = self.theTheme.colDialD[0],
+            qColG = self.theTheme.colDialD[1],
+            qColB = self.theTheme.colDialD[2],
+            indPx = self.mainConf.tabWidth,
         )
         self.qDocument.setDefaultStyleSheet(styleSheet)
 
