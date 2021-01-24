@@ -160,8 +160,9 @@ class ToHtml(Tokenizer):
         parStyle = None
         tmpResult = []
         hasHardBreak = False
-        isBlockQuote = False
-        for tType, tLine, tText, tFormat, tStyle in self.theTokens:
+        blockQuoteState = 0x00
+        nTokens = len(self.theTokens)
+        for iTk, (tType, tLine, tText, tFormat, tStyle, tBlock) in enumerate(self.theTokens):
 
             # Styles
             aStyle = []
@@ -187,37 +188,54 @@ class ToHtml(Tokenizer):
                 if tStyle & self.A_PBA_NO:
                     aStyle.append("page-break-after: never;")
 
+            # Get block type of previous and next block
+            pBlock = self.A_NONE
+            nBlock = self.A_NONE
+            if iTk > 0:
+                pBlock = self.theTokens[iTk - 1][5]
+            if iTk < nTokens - 1:
+                nBlock = self.theTokens[iTk + 1][5]
+
+            # Assemble style string
             if len(aStyle) > 0:
                 hStyle = " style='%s'" % (" ".join(aStyle))
             else:
                 hStyle = ""
 
+            # Add anchors
             if self.linkHeaders:
                 aNm = "<a name='T%06d'></a>" % tLine
             else:
                 aNm = ""
 
-            # Process Text Type
+            # Process blocks
             if tType == self.T_EMPTY:
+                blkOpen = ""
+                blkClose = ""
+                parClass = ""
+
                 if parStyle is None:
                     parStyle = ""
 
                 if hasHardBreak and self.cssStyles:
                     parClass = " class='break'"
-                else:
-                    parClass = ""
 
-                if isBlockQuote:
-                    pTag = "blockquote"
-                else:
-                    pTag = "p"
+                if tBlock == self.E_NONE and pBlock == self.E_QUOTE:
+                    blockQuoteState |= 0x02
+
+                if blockQuoteState & 0x01:
+                    blkOpen = "<blockquote>"
+                    blockQuoteState ^= 0x01
+
+                if blockQuoteState & 0x02:
+                    blkClose = "</blockquote>"
+                    blockQuoteState = 0x00
 
                 if len(thisPar) > 0:
                     tTemp = "".join(thisPar)
-                    tmpResult.append("<%s%s%s>%s</%s>\n" % (
-                        pTag, parStyle, parClass, tTemp.rstrip(), pTag
+                    tmpResult.append("%s<p%s%s>%s</p>%s\n" % (
+                        blkOpen, parStyle, parClass, tTemp.rstrip(), blkClose
                     ))
-                    isBlockQuote = False
 
                 thisPar = []
                 parStyle = None
@@ -249,13 +267,16 @@ class ToHtml(Tokenizer):
             elif tType == self.T_SKIP:
                 tmpResult.append("<p class='skip'>&nbsp;</p>\n")
 
-            elif tType == self.T_TEXT or tType == self.T_QUOTE:
-                if tType == self.T_QUOTE:
-                    isBlockQuote = True
-
+            elif tType == self.T_TEXT:
                 tTemp = tText
                 if parStyle is None:
                     parStyle = hStyle
+
+                # Detect block edges
+                if tBlock == self.E_QUOTE and pBlock != self.E_QUOTE:
+                    blockQuoteState |= 0x01
+                if tBlock == self.E_QUOTE and nBlock != self.E_QUOTE:
+                    blockQuoteState |= 0x02
 
                 for xPos, xLen, xFmt in reversed(tFormat):
                     tTemp = tTemp[:xPos]+htmlTags[xFmt]+tTemp[xPos+xLen:]
@@ -357,7 +378,7 @@ class ToHtml(Tokenizer):
                             ))
                         retText += ", ".join(refTags)
 
-        return "<div>%s</div>" % retText
+        return "<div>%s</div>\n" % retText
 
     def _buildRegEx(self):
         """Build the regular expressions

@@ -38,6 +38,7 @@ logger = logging.getLogger(__name__)
 
 class Tokenizer():
 
+    # In-Text Format
     FMT_B_B    = 1 # Begin bold
     FMT_B_E    = 2 # End bold
     FMT_I_B    = 3 # Begin italics
@@ -45,6 +46,7 @@ class Tokenizer():
     FMT_D_B    = 5 # Begin strikeout
     FMT_D_E    = 6 # End strikeout
 
+    # Block Format
     T_EMPTY    = 1  # Empty line (new paragraph)
     T_SYNOPSIS = 2  # Synopsis comment
     T_COMMENT  = 3  # Comment line
@@ -55,21 +57,25 @@ class Tokenizer():
     T_HEAD3    = 8  # Header 3
     T_HEAD4    = 9  # Header 4
     T_TEXT     = 10 # Text line
-    T_QUOTE    = 11 # Block quote
-    T_SEP      = 12 # Scene separator
-    T_SKIP     = 13 # Paragraph break
+    T_SEP      = 11 # Scene separator
+    T_SKIP     = 12 # Paragraph break
 
-    A_NONE     = 0   # No special style
-    A_LEFT     = 1   # Left aligned
-    A_RIGHT    = 2   # Right aligned
-    A_CENTRE   = 4   # Centred
-    A_JUSTIFY  = 8   # Justified
-    A_PBB      = 16  # Page break before always
-    A_PBB_AV   = 32  # Page break before avoid
-    A_PBB_NO   = 64  # Page break before never
-    A_PBA      = 128 # Page break after always
-    A_PBA_AV   = 256 # Page break after avoid
-    A_PBA_NO   = 512 # Page break after avoid
+    # Block Style
+    A_NONE     = 0x0000 # No special style
+    A_LEFT     = 0x0001 # Left aligned
+    A_RIGHT    = 0x0002 # Right aligned
+    A_CENTRE   = 0x0004 # Centred
+    A_JUSTIFY  = 0x0008 # Justified
+    A_PBB      = 0x0010 # Page break before always
+    A_PBB_AV   = 0x0020 # Page break before avoid
+    A_PBB_NO   = 0x0040 # Page break before never
+    A_PBA      = 0x0080 # Page break after always
+    A_PBA_AV   = 0x0100 # Page break after avoid
+    A_PBA_NO   = 0x0200 # Page break after avoid
+
+    # Block Environment
+    E_NONE     = 0 # Regular paragraph
+    E_QUOTE    = 1 # Region wrapped as block quote
 
     def __init__(self, theProject, theParent):
 
@@ -192,7 +198,7 @@ class Tokenizer():
         theTitle = "Notes: %s" % theItem.itemName
         self.theTokens = []
         self.theTokens.append((
-            self.T_TITLE, 0, theTitle, None, self.A_PBB | self.A_CENTRE
+            self.T_TITLE, 0, theTitle, None, self.A_PBB | self.A_CENTRE, self.E_NONE
         ))
         self.theMarkdown = "# %s\n\n" % theTitle
 
@@ -311,6 +317,15 @@ class Tokenizer():
         for aLine in self.theText.splitlines():
             nLine += 1
 
+            # Parse full block formatting
+            eType = self.E_NONE
+            if aLine.startswith(">"):
+                eType = self.E_QUOTE
+                aLine = aLine[1:].lstrip(" ")
+            elif aLine.startswith("&gt;"):
+                eType = self.E_QUOTE
+                aLine = aLine[4:].lstrip(" ")
+
             # Tag lines starting with specific characters
             if len(aLine.strip()) == 0:
                 self.theTokens.append((
@@ -318,7 +333,8 @@ class Tokenizer():
                     nLine,
                     "",
                     None,
-                    self.A_NONE
+                    self.A_NONE,
+                    eType
                 ))
                 tmpMarkdown.append("\n")
 
@@ -331,7 +347,8 @@ class Tokenizer():
                         nLine,
                         cLine[9:].strip(),
                         None,
-                        self.A_NONE
+                        self.A_NONE,
+                        eType
                     ))
                     if self.doSynopsis:
                         tmpMarkdown.append("%s\n" % aLine)
@@ -341,7 +358,8 @@ class Tokenizer():
                         nLine,
                         aLine[1:].strip(),
                         None,
-                        self.A_NONE
+                        self.A_NONE,
+                        eType
                     ))
                     if self.doComments:
                         tmpMarkdown.append("%s\n" % aLine)
@@ -352,7 +370,8 @@ class Tokenizer():
                     nLine,
                     aLine[1:].strip(),
                     None,
-                    self.A_NONE
+                    self.A_NONE,
+                    eType
                 ))
                 if self.doKeywords:
                     tmpMarkdown.append("%s\n" % aLine)
@@ -363,7 +382,8 @@ class Tokenizer():
                     nLine,
                     aLine[2:].strip(),
                     None,
-                    self.A_NONE
+                    self.A_NONE,
+                    eType
                 ))
                 tmpMarkdown.append("%s\n" % aLine)
 
@@ -373,7 +393,8 @@ class Tokenizer():
                     nLine,
                     aLine[3:].strip(),
                     None,
-                    self.A_NONE
+                    self.A_NONE,
+                    eType
                 ))
                 tmpMarkdown.append("%s\n" % aLine)
 
@@ -383,7 +404,8 @@ class Tokenizer():
                     nLine,
                     aLine[4:].strip(),
                     None,
-                    self.A_NONE
+                    self.A_NONE,
+                    eType
                 ))
                 tmpMarkdown.append("%s\n" % aLine)
 
@@ -393,7 +415,8 @@ class Tokenizer():
                     nLine,
                     aLine[5:].strip(),
                     None,
-                    self.A_NONE
+                    self.A_NONE,
+                    eType
                 ))
                 tmpMarkdown.append("%s\n" % aLine)
 
@@ -401,15 +424,6 @@ class Tokenizer():
                 if not self.doBodyText:
                     # Skip all body text
                     continue
-
-                if aLine.startswith(">"):
-                    pType = self.T_QUOTE
-                    aLine = aLine[1:].lstrip(" ")
-                elif aLine.startswith("&gt;"):
-                    pType = self.T_QUOTE
-                    aLine = aLine[4:].lstrip(" ")
-                else:
-                    pType = self.T_TEXT
 
                 # Otherwise we use RegEx to find formatting tags within a line of text
                 fmtPos = []
@@ -427,11 +441,12 @@ class Tokenizer():
                 # sorted by position
                 fmtPos = sorted(fmtPos, key=itemgetter(0))
                 self.theTokens.append((
-                    pType,
+                    self.T_TEXT,
                     nLine,
                     aLine,
                     fmtPos,
-                    self.A_NONE
+                    self.A_NONE,
+                    eType
                 ))
                 tmpMarkdown.append("%s\n" % aLine)
 
@@ -441,7 +456,8 @@ class Tokenizer():
             nLine,
             "",
             None,
-            self.A_NONE
+            self.A_NONE,
+            self.E_NONE
         ))
         tmpMarkdown.append("\n")
 
@@ -479,7 +495,8 @@ class Tokenizer():
                         tToken[1],
                         tTemp,
                         None,
-                        self.A_NONE
+                        self.A_NONE,
+                        tToken[5]
                     )
 
                 elif tToken[0] == self.T_HEAD2:
@@ -501,7 +518,8 @@ class Tokenizer():
                         tToken[1],
                         tTemp,
                         None,
-                        self.A_PBB
+                        self.A_PBB,
+                        tToken[5]
                     )
 
                     # Set scene variables
@@ -522,7 +540,8 @@ class Tokenizer():
                             tToken[1],
                             "",
                             None,
-                            self.A_NONE
+                            self.A_NONE,
+                            tToken[5]
                         )
                     elif tTemp == "" and not self.hideScene:
                         if self.firstScene:
@@ -531,7 +550,8 @@ class Tokenizer():
                                 tToken[1],
                                 "",
                                 None,
-                                self.A_NONE
+                                self.A_NONE,
+                                tToken[5]
                             )
                         else:
                             self.theTokens[n] = (
@@ -539,7 +559,8 @@ class Tokenizer():
                                 tToken[1],
                                 "",
                                 None,
-                                self.A_NONE
+                                self.A_NONE,
+                                tToken[5]
                             )
                     elif tTemp == self.fmtScene:
                         if self.firstScene:
@@ -548,7 +569,8 @@ class Tokenizer():
                                 tToken[1],
                                 "",
                                 None,
-                                self.A_NONE
+                                self.A_NONE,
+                                tToken[5]
                             )
                         else:
                             self.theTokens[n] = (
@@ -556,7 +578,8 @@ class Tokenizer():
                                 tToken[1],
                                 tTemp,
                                 None,
-                                self.A_CENTRE
+                                self.A_CENTRE,
+                                tToken[5]
                             )
                     else:
                         self.theTokens[n] = (
@@ -564,7 +587,8 @@ class Tokenizer():
                             tToken[1],
                             tTemp,
                             None,
-                            self.A_NONE
+                            self.A_NONE,
+                            tToken[5]
                         )
 
                     # Definitely no longer the first scene
@@ -581,7 +605,8 @@ class Tokenizer():
                             tToken[1],
                             "",
                             None,
-                            self.A_NONE
+                            self.A_NONE,
+                            tToken[5]
                         )
                     elif tTemp == "" and not self.hideSection:
                         self.theTokens[n] = (
@@ -589,7 +614,8 @@ class Tokenizer():
                             tToken[1],
                             "",
                             None,
-                            self.A_NONE
+                            self.A_NONE,
+                            tToken[5]
                         )
                     elif tTemp == self.fmtSection:
                         self.theTokens[n] = (
@@ -597,7 +623,8 @@ class Tokenizer():
                             tToken[1],
                             tTemp,
                             None,
-                            self.A_CENTRE
+                            self.A_CENTRE,
+                            tToken[5]
                         )
                     else:
                         self.theTokens[n] = (
@@ -605,7 +632,8 @@ class Tokenizer():
                             tToken[1],
                             tTemp,
                             None,
-                            self.A_NONE
+                            self.A_NONE,
+                            tToken[5]
                         )
 
         # For title page and partitions, we need to centre all text.
@@ -621,7 +649,8 @@ class Tokenizer():
                             tToken[1],
                             tToken[2],
                             tToken[3],
-                            self.A_PBB_NO | self.A_CENTRE
+                            self.A_PBB_NO | self.A_CENTRE,
+                            tToken[5]
                         )
                     else:
                         self.theTokens[n] = (
@@ -629,7 +658,8 @@ class Tokenizer():
                             tToken[1],
                             tToken[2],
                             tToken[3],
-                            self.A_PBB | self.A_CENTRE
+                            self.A_PBB | self.A_CENTRE,
+                            tToken[5]
                         )
                 else:
                     self.theTokens[n] = (
@@ -637,7 +667,8 @@ class Tokenizer():
                         tToken[1],
                         tToken[2],
                         tToken[3],
-                        self.A_CENTRE
+                        self.A_CENTRE,
+                        tToken[5]
                     )
 
             # Add a page break after the last entry
@@ -649,7 +680,8 @@ class Tokenizer():
                     tToken[1],
                     tToken[2],
                     tToken[3],
-                    tToken[4] | self.A_PBA
+                    tToken[4] | self.A_PBA,
+                    tToken[5]
                 )
 
         # A single page is always left-aligned and starts on a fresh
@@ -662,7 +694,8 @@ class Tokenizer():
                         tToken[1],
                         tToken[2],
                         tToken[3],
-                        self.A_LEFT | self.A_PBB
+                        self.A_LEFT | self.A_PBB,
+                        tToken[5]
                     )
                 else:
                     self.theTokens[n] = (
@@ -670,7 +703,8 @@ class Tokenizer():
                         tToken[1],
                         tToken[2],
                         tToken[3],
-                        self.A_LEFT
+                        self.A_LEFT,
+                        tToken[5]
                     )
 
         return True
